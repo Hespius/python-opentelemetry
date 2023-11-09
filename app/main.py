@@ -6,7 +6,8 @@ from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource, SERVICE_NAME
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.exporter.zipkin.proto.http import ZipkinExporter
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, BatchSpanProcessor
 from src.util.utils import print_something
 
 # Carrega as configurações de log do arquivo logging.conf
@@ -24,10 +25,18 @@ jaeger_exporter = JaegerExporter(
     agent_port=6831,  # Porta padrão para comunicação com o agente Jaeger
 )
 
+exporter = ZipkinExporter(
+    endpoint="http://localhost:9411/api/v2/spans",
+)
+
+# Configure o exportador de arquivo local para armazenar os traces em um diretório específico.
+
 # Configurar exportador de rastreamento para a saída no console
 span_processor = SimpleSpanProcessor(jaeger_exporter)
-tracer_provider.add_span_processor(span_processor)
+zipkin_span_processor = BatchSpanProcessor(exporter)
 
+tracer_provider.add_span_processor(span_processor)
+tracer_provider.add_span_processor(zipkin_span_processor)
 # Configurar o provedor de rastreamento como provedor global
 trace.set_tracer_provider(tracer_provider)
 
